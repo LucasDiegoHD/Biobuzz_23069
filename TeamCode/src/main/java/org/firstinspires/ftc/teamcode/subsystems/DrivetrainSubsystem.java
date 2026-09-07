@@ -122,6 +122,64 @@ public class DrivetrainSubsystem {
         Drawing.sendPacket();
         Drawing.drawDebug(follower);
     }
+
+    /**
+     * Follows a PathChain with the specified power and hold-end configuration.
+     *
+     * @param path     The PathChain to follow.
+     * @param maxPower Maximum power scaling (0 to 1).
+     * @param holdEnd  Whether to actively hold the end pose.
+     */
+    public void followPath(PathChain path, double maxPower, boolean holdEnd) {
+        follower.followPath(path, maxPower, holdEnd);
+    }
+
+    /**
+     * Follows a PathChain with hold-end enabled.
+     *
+     * @param path The PathChain to follow.
+     */
+    public void followPath(PathChain path) {
+        follower.followPath(path, true);
+    }
+
+    /**
+     * Checks if the follower is actively running a path.
+     *
+     * @return True if busy.
+     */
+    public boolean isBusy() {
+        return follower.isBusy();
+    }
+
+    /**
+     * Gets the current parametric progress (0.0 to 1.0) along the active PathChain.
+     *
+     * @return Current T value.
+     */
+    public double getCurrentTValue() {
+        return follower.getCurrentTValue();
+    }
+
+    /**
+     * Checks whether parametric progress has passed a given threshold.
+     *
+     * @param t Threshold between 0.0 and 1.0.
+     * @return True if current T value is greater than threshold.
+     */
+    public boolean tValueCondition(double t) {
+        return follower.getCurrentTValue() > t;
+    }
+
+    /**
+     * Checks whether the current linear velocity magnitude is below a threshold.
+     *
+     * @param maxVelocity Maximum linear velocity in in/s.
+     * @return True if linear velocity is below maxVelocity.
+     */
+    public boolean velocityCondition(double maxVelocity) {
+        return follower.getVelocity().getMagnitude() < maxVelocity;
+    }
 }
 
 /**

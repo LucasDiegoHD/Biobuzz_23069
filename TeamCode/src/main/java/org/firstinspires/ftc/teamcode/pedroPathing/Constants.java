@@ -18,6 +18,13 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 @Configurable
 public class Constants {
+    public static double AGGRESSIVE_PROPORTIONAL = 0.28;
+    public static double DEFAULT_PROPORTIONAL = 0.22;
+    public static double MEDIUM_PROPORTIONAL = 0.15;
+    public static double CONSERVATIVE_PROPORTIONAL = 0.1;
+    public static double K_LINEAR_BRAKE = 0.0633;
+    public static double K_QUADRATIC_BRAKE = 0.00146;
+
     public static class Drivetrain {
         public static String LEFT_FRONT_MOTOR = "leftFront";
         public static String RIGHT_FRONT_MOTOR = "rightFront";
@@ -27,7 +34,14 @@ public class Constants {
     }
 
     public static FollowerConstants followerConstants = new FollowerConstants()
-            .mass(8)
+        .mass(6)
+        .predictiveBrakingCoefficients(
+                new com.pedropathing.control.PredictiveBrakingCoefficients(
+                        DEFAULT_PROPORTIONAL,
+                        K_LINEAR_BRAKE,
+                        K_QUADRATIC_BRAKE
+                )
+        )
             .forwardZeroPowerAcceleration(-73.315092662612045)
             .lateralZeroPowerAcceleration(-97.42340280933647)
             .useSecondaryTranslationalPIDF(true)
@@ -50,9 +64,9 @@ public class Constants {
             .leftRearMotorName(Drivetrain.LEFT_REAR_MOTOR)
             .rightFrontMotorName(Drivetrain.RIGHT_FRONT_MOTOR)
             .rightRearMotorName(Drivetrain.RIGHT_REAR_MOTOR)
-            .leftFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
-            .leftRearMotorDirection(DcMotorSimple.Direction.FORWARD)
-            .rightFrontMotorDirection(DcMotorSimple.Direction.REVERSE)
+            .leftFrontMotorDirection(DcMotorSimple.Direction.REVERSE)
+            .leftRearMotorDirection(DcMotorSimple.Direction.REVERSE)
+            .rightFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
             .rightRearMotorDirection(DcMotorSimple.Direction.FORWARD)
             .xVelocity(77.11611423342248)
             .yVelocity(70.88718660609929)
@@ -108,7 +122,7 @@ public class Constants {
 
     public static Follower createFollower(HardwareMap hardwareMap) {
         return new FollowerBuilder(followerConstants, hardwareMap)
-                .mecanumDrivetrain(driveConstants)
+                .setDrivetrain(new LucasMecanumDrive(hardwareMap, driveConstants))
                 .pinpointLocalizer(localizerConstants)
                 .pathConstraints(pathConstraints)
                 .build();
