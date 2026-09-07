@@ -1,0 +1,3 @@
+altura 245.54
+dist 164,06
+angulo 65.56
