@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.commands;
 
-import com.pedropathing.geometry.Pose;
 import com.pedropathing.ivy.Command;
 import com.pedropathing.ivy.behaviors.InterruptedBehavior;
 import com.qualcomm.robotcore.hardware.Gamepad;
@@ -10,135 +9,99 @@ import org.firstinspires.ftc.teamcode.utils.AllianceEnum;
 import org.firstinspires.ftc.teamcode.utils.DataStorage;
 
 /**
- * Condução field-centric do piloto: entradas ao quadrado, limitação de taxa na aceleração e
- * desaceleração, trava de rumo quando o piloto solta o giro, e escala por tensão da bateria.
+ * High-performance, agile field-centric drive command for the TechMaker (#23069) chassis.
  *
- * <p>É o comando contínuo do drivetrain. Roda com prioridade base e
- * {@link InterruptedBehavior#SUSPEND}: comandos de botão que reservam o drivetrain (alinhar ao
- * AprilTag, mira cinemática) o suspendem, e o escalonador o retoma sozinho quando eles terminam —
- * sem passar pelo {@code start()} de novo, então a suavização não dá solavanco na volta.
+ * <p>Advanced integrated teleop drive architecture featuring:
+ * <ul>
+ *   <li>Default Field-Centric drive with alliance-aware orientation.</li>
+ *   <li>Non-linear tangent response curves for millimeter precision at low speed.</li>
+ *   <li>Mecanum denominator normalization allowing simultaneous translation and rotation.</li>
+ *   <li><b>Kick (Right Bumper)</b>: Rapid closed-loop trajectory toward the scoring zone.</li>
+ *   <li><b>Hold Pose (Button B)</b>: Active closed-loop position holding resisting pushes and drift.</li>
+ *   <li><b>Dynamic Angle Snap (Left Trigger)</b>: Snaps and holds the nearest 90° angle while held.</li>
+ *   <li><b>Cardinal Snaps (D-Pad)</b>: 1-touch snaps to 0°, 90°, 180°, 270°.</li>
+ * </ul>
+ *
+ * <p><b>Nota Biobuzz:</b> o Right Trigger foi liberado desta classe (não faz mais
+ * {@code lockHeading}) porque agora é reservado para o {@link KinematicAimDriveCommand}
+ * (mira cinemática na CÉLULA ativa do HIVE), agendado como comando de prioridade 1 a partir
+ * do OpMode. Ao soltar o gatilho, aquele comando termina sozinho e o Ivy retoma este
+ * comando contínuo automaticamente.
+ *
+ * @author LucasDiegoHD - TechMaker (#23069)
  */
 public final class TeleOpDriveCommand {
 
     private TeleOpDriveCommand() {
     }
 
-    private static final double MAX_ACCELERATION = 8.5;
-    private static final double MAX_DECELERATION = 10.0;
-    private static final double NOMINAL_VOLTAGE = 13.5;
-    private static final double MAX_VOLTAGE_SCALE = 1.25;
-
-    // --- Constantes do Drive Straight ---
-    private static final double TURN_DEADBAND = 0.04;
-    private static final double HEADING_KD = 0.1;
-    private static final double MAX_COMP_PWR = 0.3;
-
-    /** Estado que persiste entre iterações. Um por comando construído. */
-    private static final class State {
-        double currentMagnitude;
-        double currentAngle;
-        long lastTime;
-        double lastHeading;
-    }
-
     public static Command teleOpDrive(DrivetrainSubsystem drivetrain, Gamepad driverGamepad) {
-        final State s = new State();
         final AllianceEnum alliance = DataStorage.alliance;
+        final double headingOffset = (alliance == AllianceEnum.Blue) ? Math.toRadians(180) : 0.0;
+        class DriverAssistState {
+            boolean prevRightBumper = false;
+            boolean prevBButton = false;
+            boolean wasLeftTriggerHeld = false;
+        }
+        final DriverAssistState state = new DriverAssistState();
 
         return Command.build()
                 .setStart(() -> {
-                    drivetrain.getFollower().startTeleopDrive();
-                    s.lastTime = System.currentTimeMillis();
-
-                    double rawY = driverGamepad.left_stick_x;
-                    double rawX = -driverGamepad.left_stick_y;
-
-                    double targetX = rawX * Math.abs(rawX);
-                    double targetY = rawY * Math.abs(rawY);
-
-                    s.currentMagnitude = Math.hypot(targetX, targetY);
-                    s.currentAngle = (s.currentMagnitude > 0.01) ? Math.atan2(targetY, targetX) : 0.0;
-
-                    s.lastHeading = drivetrain.getFollower().getPose().getHeading();
+                    drivetrain.setTeleOp(true);
+                    drivetrain.stopHoldPose();
+                    state.prevRightBumper = false;
+                    state.prevBButton = false;
+                    state.wasLeftTriggerHeld = false;
                 })
                 .setExecute(() -> {
-                    Pose p = drivetrain.getFollower().getPose();
-                    double heading = p.getHeading();
+                    boolean currentRightBumper = driverGamepad.right_bumper;
+                    if (currentRightBumper && !state.prevRightBumper) {
+                        if (drivetrain.isKicking()) {
+                            drivetrain.cancelKick();
+                            driverGamepad.rumble(80);
+                        } else {
+                            drivetrain.kick();
+                            driverGamepad.rumble(200);
+                        }
+                    }
+                    state.prevRightBumper = currentRightBumper;
 
-                    double rawY = driverGamepad.left_stick_x;
-                    double rawX = -driverGamepad.left_stick_y;
-                    double rawTurn = -driverGamepad.right_stick_x;
+                    boolean currentBButton = driverGamepad.b;
+                    if (currentBButton && !state.prevBButton) {
+                        boolean nowHolding = drivetrain.toggleHoldPose();
+                        if (nowHolding) {
+                            driverGamepad.rumble(150);
+                        } else {
+                            driverGamepad.rumble(80);
+                        }
+                    }
+                    state.prevBButton = currentBButton;
 
-                    double targetX = rawX * Math.abs(rawX);
-                    double targetY = rawY * Math.abs(rawY);
-                    double targetTurn = rawTurn * Math.abs(rawTurn);
-
-                    long currentTime = System.currentTimeMillis();
-                    double dt = Math.max((currentTime - s.lastTime) / 1000.0, 0.001);
-                    s.lastTime = currentTime;
-
-                    // --- Lógica de Translação (Intacta) ---
-                    double targetMagnitude = Math.hypot(targetX, targetY);
-                    double targetAngle = (targetMagnitude > 0.01)
-                            ? Math.atan2(targetY, targetX)
-                            : s.currentAngle;
-
-                    double delta;
-                    if (targetMagnitude >= s.currentMagnitude) {
-                        delta = MAX_ACCELERATION * dt;
-                    } else {
-                        delta = MAX_DECELERATION * dt;
+                    if (driverGamepad.left_trigger > 0.2) {
+                        if (!state.wasLeftTriggerHeld) {
+                            drivetrain.snapToNearestCardinal();
+                            state.wasLeftTriggerHeld = true;
+                        }
+                    } else if (state.wasLeftTriggerHeld) {
+                        drivetrain.unlockHeading();
+                        state.wasLeftTriggerHeld = false;
                     }
 
-                    if (Math.abs(targetMagnitude - s.currentMagnitude) <= delta) {
-                        s.currentMagnitude = targetMagnitude;
-                    } else {
-                        s.currentMagnitude += Math.copySign(delta, targetMagnitude - s.currentMagnitude);
+                    if (driverGamepad.dpad_up) {
+                        drivetrain.lockHeading(0.0);
+                        state.wasLeftTriggerHeld = false;
+                    } else if (driverGamepad.dpad_right) {
+                        drivetrain.lockHeading(Math.toRadians(90.0));
+                        state.wasLeftTriggerHeld = false;
+                    } else if (driverGamepad.dpad_down) {
+                        drivetrain.lockHeading(Math.toRadians(180.0));
+                        state.wasLeftTriggerHeld = false;
+                    } else if (driverGamepad.dpad_left) {
+                        drivetrain.lockHeading(Math.toRadians(-90.0));
+                        state.wasLeftTriggerHeld = false;
                     }
 
-                    if (targetMagnitude > 0.05) {
-                        double angleDiff = targetAngle - s.currentAngle;
-                        while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
-                        while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
-                        s.currentAngle += angleDiff * Math.min(1.0, s.currentMagnitude * 8.0 * dt);
-                    }
-
-                    double smoothX = s.currentMagnitude * Math.cos(s.currentAngle);
-                    double smoothY = s.currentMagnitude * Math.sin(s.currentAngle);
-
-                    double headingDelta = heading - s.lastHeading;
-                    while (headingDelta > Math.PI) headingDelta -= 2 * Math.PI;
-                    while (headingDelta < -Math.PI) headingDelta += 2 * Math.PI;
-
-                    double angularVelocity = headingDelta / dt;
-                    s.lastHeading = heading;
-
-                    double finalTurnPower;
-                    if (Math.abs(rawTurn) > TURN_DEADBAND) {
-                        finalTurnPower = targetTurn;
-                    } else {
-                        finalTurnPower = -HEADING_KD * angularVelocity;
-                        finalTurnPower = Math.max(-MAX_COMP_PWR, Math.min(MAX_COMP_PWR, finalTurnPower));
-                    }
-
-                    // Rotação field-centric
-                    double xField = smoothX * Math.cos(heading) - smoothY * Math.sin(heading);
-                    double yField = smoothX * Math.sin(heading) + smoothY * Math.cos(heading);
-
-                    if (alliance == AllianceEnum.Blue) {
-                        xField = -xField;
-                        yField = -yField;
-                    }
-
-                    double voltage = Math.max(drivetrain.getVoltage(), 10.0);
-                    double voltageScale = Math.min(NOMINAL_VOLTAGE / voltage, MAX_VOLTAGE_SCALE);
-
-                    drivetrain.getFollower().setTeleOpDrive(
-                            xField * voltageScale,
-                            -yField * voltageScale,
-                            finalTurnPower * voltageScale,
-                            true
-                    );
+                    drivetrain.arcadeDrive(driverGamepad, headingOffset);
                 })
                 .setDone(() -> false)
                 .requiring(drivetrain)

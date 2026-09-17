@@ -1,8 +1,8 @@
 package org.firstinspires.ftc.teamcode.commands;
 
 import com.bylazar.telemetry.TelemetryManager;
-import com.pedropathing.control.PIDFCoefficients;
-import com.pedropathing.control.PIDFController;
+import org.firstinspires.ftc.teamcode.utils.control.PIDFCoefficients;
+import org.firstinspires.ftc.teamcode.utils.control.PIDFController;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.ivy.Command;
 import com.qualcomm.robotcore.hardware.Gamepad;
@@ -47,7 +47,6 @@ public final class AlignToAprilTagCommand {
 
     public static Command alignToAprilTag(DrivetrainSubsystem drivetrain, VisionSubsystem vision,
                                           TelemetryManager telemetry, Gamepad operator) {
-        final Follower follower = drivetrain.getFollower();
         final PIDFController turnController = new PIDFController(new PIDFCoefficients(
                 VisionConstants.TURN_KP,
                 VisionConstants.TURN_KI,
@@ -72,7 +71,7 @@ public final class AlignToAprilTagCommand {
                             VisionConstants.TURN_KF));
 
                     if (!vision.hasTarget()) {
-                        follower.setTeleOpDrive(0, 0, 0, true);
+                        drivetrain.drive(0, 0, 0, false);
                         telemetry.debug("No AprilTag detected");
 
                         s.hasVibrated = false;
@@ -104,14 +103,14 @@ public final class AlignToAprilTagCommand {
                         telemetry.debug("Turn Power", turnPower);
                         telemetry.debug("At SetPoint", s.atSetPoint);
 
-                        follower.setTeleOpDrive(0, 0, turnPower, true);
+                        drivetrain.drive(0, 0, turnPower, false);
                     }
                 })
                 .setDone(() -> (vision.hasTarget() && s.atSetPoint)
                         || s.notSeenCounter >= APRILTAG_NOT_SEEN_MAXIMUM_COUNTER)
                 .setEnd(endCondition -> {
                     aligning = false;
-                    follower.setTeleOpDrive(0, 0, 0, true);
+                    drivetrain.drive(0, 0, 0, false);
                     telemetry.debug("Alignment finished.");
                     telemetry.update();
                 })

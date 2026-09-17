@@ -1,80 +1,75 @@
 package org.firstinspires.ftc.teamcode.autos.paths;
 
-import com.pedropathing.geometry.Pose;
+import com.pedropathing.math.Pose;
 import org.firstinspires.ftc.teamcode.pedroPathing.ColoredBiobuzzPose;
+import org.firstinspires.ftc.teamcode.utils.AllianceEnum;
+import org.firstinspires.ftc.teamcode.utils.DataStorage;
+import org.firstinspires.ftc.teamcode.utils.HiveTargets;
 
 /**
- * Universal Autonomous Waypoints Template for the Biobuzz season.
+ * Waypoints do autônomo pra temporada Biobuzz.
  *
- * <p>All positions are declared as {@link ColoredBiobuzzPose}. By default, coordinates
- * are automatically mirrored for Red and Blue alliances. If specific field elements
- * require empirical alliance offsets, use {@code new ColoredBiobuzzPose(bluePose, redPose)}.
- *
- * <p>Coordinate system: Field size is 144" x 144". (0,0) is at field corner.
- * Heading is in radians (use {@code Math.toRadians(degrees)}).
+ * <p>Poses declaradas como {@link ColoredBiobuzzPose} são espelhadas automaticamente em X pra
+ * Red/Blue. Campo 144"x144", origem (0,0) no canto, heading em radianos.
  *
  * @author LucasDiegoHD - Team #23069
  */
 public final class BiobuzzAutoPaths {
 
     private BiobuzzAutoPaths() {}
+    public static double RED_START_X = 60.0;
+    public static double RED_START_Y = 14.64;
 
-    // =========================================================================
-    // 1. STARTING POSE (Robot resting against perimeter wall before start)
-    // =========================================================================
-    public static final ColoredBiobuzzPose START_POSE = new ColoredBiobuzzPose(
-            24.0, 134.0, Math.toRadians(90.0)
-    );
+    public static double BLUE_START_X = 84.0;
+    public static double BLUE_START_Y = 129.35;
 
-    // =========================================================================
-    // 2. PRELOAD SCORING (Initial preloaded element delivery)
-    // =========================================================================
-    public static final ColoredBiobuzzPose PRELOAD_SCORE = new ColoredBiobuzzPose(
+    public static double RED_PARK_X = 10.0;
+    public static double RED_PARK_Y = 104.0;
+
+    public static double BLUE_PARK_X = 134.0;
+    public static double BLUE_PARK_Y = 40.0;
+
+    // --- Ponto de disparo/entrega usado no preload e nos ciclos 1 e 2 ---
+    public static final ColoredBiobuzzPose SCORE_POSE = new ColoredBiobuzzPose(
             24.0, 100.0, Math.toRadians(90.0)
     );
 
-    // =========================================================================
-    // 3. CYCLE 1: INTAKE & SCORE
-    // =========================================================================
-    // Bezier control point to smooth out transit without sharp corners
+    // --- Ciclo 1: intake no chão + volta pro SCORE_POSE ---
     public static final ColoredBiobuzzPose CYCLE_1_INTAKE_CONTROL = new ColoredBiobuzzPose(
             36.0, 100.0
     );
-    // Position where the robot intakes piece 1 from the floor
     public static final ColoredBiobuzzPose CYCLE_1_INTAKE = new ColoredBiobuzzPose(
             48.0, 80.0, Math.toRadians(180.0)
     );
-    // Position where piece 1 is delivered
-    public static final ColoredBiobuzzPose CYCLE_1_SCORE = new ColoredBiobuzzPose(
-            24.0, 100.0, Math.toRadians(90.0)
-    );
 
-    // =========================================================================
-    // 4. CYCLE 2: INTAKE & SCORE
-    // =========================================================================
-    public static final ColoredBiobuzzPose CYCLE_2_INTAKE = new ColoredBiobuzzPose(
-            48.0, 70.0, Math.toRadians(180.0)
-    );
-    public static final ColoredBiobuzzPose CYCLE_2_SCORE = new ColoredBiobuzzPose(
-            24.0, 100.0, Math.toRadians(90.0)
-    );
+    // --- Ciclo 2: outro ponto de intake, 10in abaixo do ciclo 1 ---
+    public static final ColoredBiobuzzPose CYCLE_2_INTAKE = CYCLE_1_INTAKE.down(10.0);
 
-    // =========================================================================
-    // 5. PARK / END POSITION (Final parking zone for endgame points)
-    // =========================================================================
-    public static final ColoredBiobuzzPose PARK_POSE = new ColoredBiobuzzPose(
-            60.0, 60.0, Math.toRadians(90.0)
-    );
-
-    /**
-     * Resolves the active pose based on the selected alliance in DataStorage.
-     */
     public static Pose getStartPose() {
-        return START_POSE.getPose();
+        return getStartPose(DataStorage.alliance);
+    }
+
+    public static Pose getStartPose(AllianceEnum alliance) {
+        double startX = (alliance == AllianceEnum.Red) ? RED_START_X : BLUE_START_X;
+        double startY = (alliance == AllianceEnum.Red) ? RED_START_Y : BLUE_START_Y;
+        double heading = HiveTargets.headingTowardsInitialCell(startX, startY, alliance);
+        return new Pose(startX, startY, heading);
+    }
+
+    public static Pose getParkPose() {
+        return getParkPose(DataStorage.alliance);
+    }
+
+    public static Pose getParkPose(AllianceEnum alliance) {
+        if (alliance == AllianceEnum.Red) {
+            return new Pose(10.0, 104.0, Math.toRadians(90.0));
+        } else {
+            return new Pose(134.0, 104.0, Math.toRadians(270.0));
+        }
     }
 
     public static Pose getPreloadScore() {
-        return PRELOAD_SCORE.getPose();
+        return SCORE_POSE.getPose();
     }
 
     public static Pose getCycle1Intake() {
@@ -82,7 +77,7 @@ public final class BiobuzzAutoPaths {
     }
 
     public static Pose getCycle1Score() {
-        return CYCLE_1_SCORE.getPose();
+        return SCORE_POSE.getPose();
     }
 
     public static Pose getCycle2Intake() {
@@ -90,10 +85,6 @@ public final class BiobuzzAutoPaths {
     }
 
     public static Pose getCycle2Score() {
-        return CYCLE_2_SCORE.getPose();
-    }
-
-    public static Pose getParkPose() {
-        return PARK_POSE.getPose();
+        return SCORE_POSE.getPose();
     }
 }

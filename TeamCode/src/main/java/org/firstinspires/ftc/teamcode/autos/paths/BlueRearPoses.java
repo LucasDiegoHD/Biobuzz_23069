@@ -1,6 +1,6 @@
 package org.firstinspires.ftc.teamcode.autos.paths;
 
-import com.pedropathing.geometry.Pose;
+import com.pedropathing.math.Pose;
 
 import java.util.List;
 

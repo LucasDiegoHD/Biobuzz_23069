@@ -3,12 +3,12 @@ package org.firstinspires.ftc.teamcode.commands;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.ivy.Command;
 import com.pedropathing.ivy.behaviors.InterruptedBehavior;
-import com.pedropathing.geometry.Pose;
-import com.pedropathing.math.Vector;
+import com.pedropathing.math.Pose;
+import com.pedropathing.math.Velocity;
 
 import org.firstinspires.ftc.teamcode.subsystems.DrivetrainSubsystem;
-import org.firstinspires.ftc.teamcode.subsystems.templates.ShooterConstants;
-import org.firstinspires.ftc.teamcode.subsystems.templates.ShooterSubsystem;
+import org.firstinspires.ftc.teamcode.subsystems.ShooterConstants;
+import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.VisionConstants;
 import org.firstinspires.ftc.teamcode.subsystems.VisionSubsystem;
 
@@ -42,17 +42,17 @@ public final class ActiveAimCommand {
         final Follower follower = drivetrain.getFollower();
 
         return Command.build().setExecute(() -> {
-        Pose pose = follower.getPose();
-        Vector velocity = follower.getVelocity();
+        Pose pose = follower.pose();
+        Velocity velocity = follower.velocity();
 
-        double velX = velocity.getXComponent();
-        double velY = velocity.getYComponent();
+        double velX = velocity.vx;
+        double velY = velocity.vy;
 
         double virtualX = targetX - (velX * TIME_OF_FLIGHT);
         double virtualY = targetY - (velY * TIME_OF_FLIGHT);
 
-        double dx = virtualX - pose.getX();
-        double dy = virtualY - pose.getY();
+        double dx = virtualX - pose.x();
+        double dy = virtualY - pose.y();
         double groundDistance = Math.hypot(dx, dy);
 
         double virtualDistanceMeters = Math.hypot(groundDistance, DELTA_Z) * INCHES_TO_METERS;

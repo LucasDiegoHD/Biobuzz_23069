@@ -1,16 +1,16 @@
 package org.firstinspires.ftc.teamcode.commands;
 
-import com.pedropathing.geometry.Pose;
+import com.pedropathing.math.Pose;
+import com.pedropathing.math.Velocity;
 import com.pedropathing.ivy.Command;
 import com.pedropathing.ivy.commands.Commands;
 import com.pedropathing.ivy.groups.Groups;
-import com.pedropathing.math.Vector;
 
 import org.firstinspires.ftc.teamcode.subsystems.DrivetrainSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.VisionConstants;
 import org.firstinspires.ftc.teamcode.subsystems.VisionSubsystem;
-import org.firstinspires.ftc.teamcode.subsystems.templates.ShooterConstants;
-import org.firstinspires.ftc.teamcode.subsystems.templates.ShooterSubsystem;
+import org.firstinspires.ftc.teamcode.subsystems.ShooterConstants;
+import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 
 /**
  * Comandos one-shot do atirador: velocidade dos volantes e posição do capô.
@@ -103,9 +103,9 @@ public final class ShooterCommands {
         return Commands.instant(() -> {
             double distance = vision.getDirectDistanceToTarget().orElse(0.0);
 
-            Pose pose = drivetrain.getFollower().getPose();
-            double dx = targetX - pose.getX();
-            double dy = targetY - pose.getY();
+            Pose pose = drivetrain.getPose();
+            double dx = targetX - pose.x();
+            double dy = targetY - pose.y();
             double groundDistance = Math.hypot(dx, dy);
 
             if (distance <= 0.1) {
@@ -114,13 +114,13 @@ public final class ShooterCommands {
 
             double baseRpm = rpmPolynomial(distance);
 
-            Vector velocity = drivetrain.getFollower().getVelocity();
+            Velocity velocity = drivetrain.getVelocity();
             double velTowardsGoal = 0.0;
 
             if (groundDistance > 1.0) {
                 double dirX = dx / groundDistance;
                 double dirY = dy / groundDistance;
-                velTowardsGoal = (velocity.getXComponent() * dirX) + (velocity.getYComponent() * dirY);
+                velTowardsGoal = (velocity.vx * dirX) + (velocity.vy * dirY);
             }
 
             double rpmAdjustment = velTowardsGoal > 0
@@ -202,8 +202,8 @@ public final class ShooterCommands {
     /** Distância em metros até (targetX, targetY), corrigida pela altura da meta. */
     private static double distanceFromPose(DrivetrainSubsystem drivetrain,
                                            double targetX, double targetY, double deltaZ) {
-        Pose pose = drivetrain.getFollower().getPose();
-        double groundDistance = Math.hypot(targetX - pose.getX(), targetY - pose.getY());
+        Pose pose = drivetrain.getPose();
+        double groundDistance = Math.hypot(targetX - pose.x(), targetY - pose.y());
         return Math.hypot(groundDistance, deltaZ) / INCHES_PER_METER;
     }
 }

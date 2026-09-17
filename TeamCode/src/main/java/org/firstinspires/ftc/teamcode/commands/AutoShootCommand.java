@@ -1,6 +1,6 @@
 package org.firstinspires.ftc.teamcode.commands;
 
-import com.pedropathing.geometry.Pose;
+import com.pedropathing.math.Pose;
 import com.pedropathing.ivy.Command;
 import com.pedropathing.ivy.groups.Groups;
 import com.qualcomm.robotcore.hardware.Gamepad;
@@ -8,8 +8,8 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 import org.firstinspires.ftc.teamcode.subsystems.DrivetrainSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
 import org.firstinspires.ftc.teamcode.subsystems.VisionSubsystem;
-import org.firstinspires.ftc.teamcode.subsystems.templates.IndexerSubsystem;
-import org.firstinspires.ftc.teamcode.subsystems.templates.ShooterSubsystem;
+import org.firstinspires.ftc.teamcode.subsystems.IndexerSubsystem;
+import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 
 /**
  * Macro de tiro do teleop, num botão só.

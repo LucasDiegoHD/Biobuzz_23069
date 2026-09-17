@@ -1,38 +1,47 @@
 package org.firstinspires.ftc.teamcode.commands;
 
-import com.pedropathing.control.PIDFCoefficients;
-import com.pedropathing.control.PIDFController;
+import org.firstinspires.ftc.teamcode.utils.control.PIDFCoefficients;
+import org.firstinspires.ftc.teamcode.utils.control.PIDFController;
 import com.pedropathing.follower.Follower;
-import com.pedropathing.geometry.Pose;
+import com.pedropathing.math.Pose;
+import com.pedropathing.math.Velocity;
 import com.pedropathing.ivy.Command;
-import com.pedropathing.math.Vector;
 import com.qualcomm.robotcore.hardware.Gamepad;
 
 import org.firstinspires.ftc.teamcode.subsystems.DrivetrainSubsystem;
-import org.firstinspires.ftc.teamcode.subsystems.templates.ShooterConstants;
+import org.firstinspires.ftc.teamcode.subsystems.ShooterConstants;
 import org.firstinspires.ftc.teamcode.utils.AllianceEnum;
 import org.firstinspires.ftc.teamcode.utils.DataStorage;
 
+import java.util.function.Supplier;
+
 /**
- * Condução do piloto com mira automática: o piloto controla a translação, o comando controla o
- * rumo, apontando para onde a meta <i>estará</i> quando o artefato chegar.
+ * Condução com mira cinemática ativa para a meta selecionada.
  *
- * <p>A predição soma tempo de voo, latência do sistema e a velocidade tangencial gerada pela
- * própria rotação do robô, e ainda aplica um feedforward proporcional à velocidade lateral.
- * O trava/destrava usa histerese (tolerância interna e externa) para não oscilar no limiar.
+ * <p>O piloto controla a translação em campo enquanto o robô gira automaticamente em direção à meta
+ * virtual — compensando velocidade própria, velocidade da peça, latência de disparo e velocidade
+ * tangencial do atirador durante giros.
  *
- * <p>Reserva o drivetrain com prioridade 1, acima do comando contínuo de condução.
+ * <p>Substitui a condução contínua manual enquanto o gatilho direito estiver pressionado.
+ *
+ * <p><b>Biobuzz:</b> o alvo agora vem de um {@link Supplier}, lido a cada iteração, em vez de um
+ * ponto fixo — porque a CÉLULA pontuável do HIVE muda de lado a cada TIP (ver
+ * {@link org.firstinspires.ftc.teamcode.utils.HiveTargets}). Isso também faz o comando reagir na
+ * hora se o motorista trocar o lado ativo (Left Bumper no teleop) no meio de uma mira. O comando
+ * termina sozinho quando o Right Trigger é solto, devolvendo o controle pro
+ * {@link TeleOpDriveCommand} contínuo (prioridade 0) automaticamente via scheduler do Ivy.
  */
 public final class KinematicAimDriveCommand {
 
     private KinematicAimDriveCommand() {
     }
 
-    private static final double ARTIFACT_VELOCITY_INCHES_PER_SEC = 1000.0;
-    private static final double SYSTEM_LATENCY_SECONDS = 0.4;
+    private static final double ARTIFACT_VELOCITY_INCHES_PER_SEC = 280.0;
+    private static final double SYSTEM_LATENCY_SECONDS = 0.05;
+    private static final double SHOOTER_RADIUS_INCHES = 5.0;
     private static final double FEEDFORWARD_DEAD_ZONE = Math.toRadians(2.0);
-    private static final double SHOOTER_RADIUS_INCHES = 4.0;
-    private static final double VEL_ALPHA = 0.8;
+    private static final double VEL_ALPHA = 0.3;
+    private static final double TRIGGER_RELEASE_THRESHOLD = 0.2;
 
     /** Estado que persiste entre iterações. Um por comando construído. */
     private static final class State {
@@ -41,8 +50,13 @@ public final class KinematicAimDriveCommand {
         double smoothedVelY;
     }
 
+    /**
+     * @param targetSupplier fornece a pose de mundo do alvo atual a cada iteração (ex.:
+     *                       {@code HiveTargets::getActiveCellPose}). Lido continuamente, então
+     *                       reflete trocas de lado do HIVE em tempo real.
+     */
     public static Command kinematicAimDrive(DrivetrainSubsystem drivetrain, Gamepad driver,
-                                            double targetX, double targetY) {
+                                            Supplier<Pose> targetSupplier) {
         final Follower follower = drivetrain.getFollower();
         final State s = new State();
         final PIDFController turnController = new PIDFController(new PIDFCoefficients(
@@ -53,17 +67,20 @@ public final class KinematicAimDriveCommand {
 
         return Command.build()
                 .setStart(() -> {
-                    follower.startTeleopDrive();
                     turnController.reset();
 
-                    s.smoothedVelX = follower.getVelocity().getXComponent();
-                    s.smoothedVelY = follower.getVelocity().getYComponent();
+                    s.smoothedVelX = follower.velocity().vx;
+                    s.smoothedVelY = follower.velocity().vy;
                     s.isAtTarget = false;
                 })
                 .setExecute(() -> {
-                    Pose pose = follower.getPose();
-                    Vector velocity = follower.getVelocity();
-                    double heading = pose.getHeading();
+                    Pose pose = follower.pose();
+                    Velocity velocity = follower.velocity();
+                    double heading = pose.heading();
+
+                    Pose targetPose = targetSupplier.get();
+                    double targetX = targetPose.x();
+                    double targetY = targetPose.y();
 
                     double rawY = driver.left_stick_x;
                     double rawX = -driver.left_stick_y;
@@ -79,8 +96,8 @@ public final class KinematicAimDriveCommand {
                         yField = -yField;
                     }
 
-                    s.smoothedVelX = (VEL_ALPHA * velocity.getXComponent()) + ((1 - VEL_ALPHA) * s.smoothedVelX);
-                    s.smoothedVelY = (VEL_ALPHA * velocity.getYComponent()) + ((1 - VEL_ALPHA) * s.smoothedVelY);
+                    s.smoothedVelX = (VEL_ALPHA * velocity.vx) + ((1 - VEL_ALPHA) * s.smoothedVelX);
+                    s.smoothedVelY = (VEL_ALPHA * velocity.vy) + ((1 - VEL_ALPHA) * s.smoothedVelY);
 
                     double velMagnitude = Math.hypot(s.smoothedVelX, s.smoothedVelY);
                     if (velMagnitude < 2.0) {
@@ -88,8 +105,8 @@ public final class KinematicAimDriveCommand {
                         s.smoothedVelY = 0.0;
                     }
 
-                    double robotX = pose.getX();
-                    double robotY = pose.getY();
+                    double robotX = pose.x();
+                    double robotY = pose.y();
 
                     double diffX = targetX - robotX;
                     double diffY = targetY - robotY;
@@ -104,7 +121,7 @@ public final class KinematicAimDriveCommand {
                     double timeOfFlight = distanceToTarget / effectiveArtifactVelocity;
                     double totalPredictionTime = timeOfFlight + SYSTEM_LATENCY_SECONDS;
 
-                    double angularVel = follower.getAngularVelocity();
+                    double angularVel = velocity.omega;
                     double tangentialVelMagnitude = angularVel * SHOOTER_RADIUS_INCHES;
                     double tangentialVelX = tangentialVelMagnitude * -targetDirY;
                     double tangentialVelY = tangentialVelMagnitude * targetDirX;
@@ -142,14 +159,14 @@ public final class KinematicAimDriveCommand {
                     turnPower += omegaFeedforward;
                     turnPower = Math.max(-1.0, Math.min(1.0, turnPower));
 
-                    follower.setTeleOpDrive(
+                    drivetrain.drive(
                             xField,
                             -yField,
                             -turnPower,
                             true
                     );
                 })
-                .setDone(() -> false)
+                .setDone(() -> driver.right_trigger < TRIGGER_RELEASE_THRESHOLD)
                 .requiring(drivetrain)
                 .setPriority(1);
     }

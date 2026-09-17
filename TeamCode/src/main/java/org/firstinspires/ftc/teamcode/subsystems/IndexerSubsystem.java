@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.subsystems.templates;
+package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.bylazar.telemetry.TelemetryManager;
 import com.qualcomm.hardware.rev.RevColorSensorV3;

@@ -1,7 +1,7 @@
 package org.firstinspires.ftc.teamcode.utils;
 
 import android.os.Environment;
-import com.pedropathing.geometry.Pose;
+import com.pedropathing.math.Pose;
 import java.io.*;
 
 public class PoseStorage {
@@ -11,7 +11,7 @@ public class PoseStorage {
         if (pose == null) return;
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_PATH))) {
             // Salva no formato: X,Y,Heading
-            writer.write(pose.getX() + "," + pose.getY() + "," + pose.getHeading());
+            writer.write(pose.x() + "," + pose.y() + "," + pose.heading());
         } catch (IOException e) {
             e.printStackTrace();
         }

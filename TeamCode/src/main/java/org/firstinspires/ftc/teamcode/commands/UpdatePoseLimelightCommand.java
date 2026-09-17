@@ -3,7 +3,7 @@ package org.firstinspires.ftc.teamcode.commands;
 import android.util.Log;
 import androidx.annotation.NonNull;
 
-import com.pedropathing.geometry.Pose;
+import com.pedropathing.math.Pose;
 import com.pedropathing.ivy.Command;
 import com.pedropathing.ivy.commands.Commands;
 
@@ -30,25 +30,25 @@ public final class UpdatePoseLimelightCommand {
     public static Command updatePoseLimelight(DrivetrainSubsystem drivetrain, VisionSubsystem vision,
                                               Pose fallbackPose) {
         return Commands.instant(() -> {
-            Pose currentPose = drivetrain.getFollower().getPose();
+            Pose currentPose = drivetrain.getPose();
 
-            vision.getRobotPoseMT2(currentPose.getHeading()).ifPresent(llPoseMT2 -> {
+            vision.getRobotPoseMT2(currentPose.heading()).ifPresent(llPoseMT2 -> {
 
                 double distInches = Math.hypot(
-                        llPoseMT2.getX() - currentPose.getX(),
-                        llPoseMT2.getY() - currentPose.getY()
+                        llPoseMT2.x() - currentPose.x(),
+                        llPoseMT2.y() - currentPose.y()
                 );
                 double maxDeltaInches = VisionConstants.MAX_DELTA_METERS * VisionConstants.METERS_TO_INCHES;
 
                 // CASO 1: O robô acabou de ligar (Está literalmente no 0,0)
-                if (Math.abs(currentPose.getX()) < 0.1 && Math.abs(currentPose.getY()) < 0.1) {
-                    drivetrain.getFollower().setPose(
-                            new Pose(llPoseMT2.getX(), llPoseMT2.getY(), fallbackPose.getHeading()));
+                if (Math.abs(currentPose.x()) < 0.1 && Math.abs(currentPose.y()) < 0.1) {
+                    drivetrain.setPose(
+                            new Pose(llPoseMT2.x(), llPoseMT2.y(), fallbackPose.heading()));
                     Log.i("Vision", "Primeira inicialização via Limelight (Ignorando limite de pulo)");
                 }
                 // CASO 2: O robô já está andando. Só atualiza se o pulo for pequeno!
                 else if (distInches < maxDeltaInches) {
-                    drivetrain.getFollower().setPose(getFusedPose(currentPose, llPoseMT2));
+                    drivetrain.setPose(getFusedPose(currentPose, llPoseMT2));
                     Log.d("Vision", "Pose atualizada via Fusão Limelight");
                 }
                 // CASO 3: A Limelight mentiu (Pulo gigante)
@@ -65,14 +65,14 @@ public final class UpdatePoseLimelightCommand {
      */
     public static void forceHardReset(DrivetrainSubsystem drive, VisionSubsystem vis, double targetHeadingDegrees) {
         double targetHeadingRad = Math.toRadians(targetHeadingDegrees);
-        Pose currentPose = drive.getFollower().getPose();
+        Pose currentPose = drive.getPose();
 
-        drive.getFollower().setPose(new Pose(currentPose.getX(), currentPose.getY(), targetHeadingRad));
+        drive.setPose(new Pose(currentPose.x(), currentPose.y(), targetHeadingRad));
 
         vis.getRobotPoseMT2(targetHeadingRad).ifPresent(mt2Pose -> {
-            drive.getFollower().setPose(new Pose(
-                    mt2Pose.getX(),
-                    mt2Pose.getY(),
+            drive.setPose(new Pose(
+                    mt2Pose.x(),
+                    mt2Pose.y(),
                     targetHeadingRad
             ));
             Log.i("Vision", "HARD RESET: Posição atualizada via Limelight");
@@ -86,10 +86,10 @@ public final class UpdatePoseLimelightCommand {
         double wLL = VisionConstants.LIMELIGHT_WEIGHT;
         double total = wOdo + wLL;
 
-        double fusedX = (currentPose.getX() * wOdo + llPose.getX() * wLL) / total;
-        double fusedY = (currentPose.getY() * wOdo + llPose.getY() * wLL) / total;
+        double fusedX = (currentPose.x() * wOdo + llPose.x() * wLL) / total;
+        double fusedY = (currentPose.y() * wOdo + llPose.y() * wLL) / total;
 
-        return new Pose(fusedX, fusedY, currentPose.getHeading());
+        return new Pose(fusedX, fusedY, currentPose.heading());
     }
 
     public static void resetLocalizationStatus() {

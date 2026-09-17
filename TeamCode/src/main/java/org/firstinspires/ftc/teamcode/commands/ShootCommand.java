@@ -7,9 +7,9 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.subsystems.IntakeSubsystem;
-import org.firstinspires.ftc.teamcode.subsystems.templates.IndexerSubsystem;
-import org.firstinspires.ftc.teamcode.subsystems.templates.ShooterConstants;
-import org.firstinspires.ftc.teamcode.subsystems.templates.ShooterSubsystem;
+import org.firstinspires.ftc.teamcode.subsystems.IndexerSubsystem;
+import org.firstinspires.ftc.teamcode.subsystems.ShooterConstants;
+import org.firstinspires.ftc.teamcode.subsystems.ShooterSubsystem;
 
 import java.util.function.IntSupplier;
 

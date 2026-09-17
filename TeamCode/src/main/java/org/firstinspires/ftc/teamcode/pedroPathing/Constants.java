@@ -1,16 +1,19 @@
 package org.firstinspires.ftc.teamcode.pedroPathing;
 
 import com.bylazar.configurables.annotations.Configurable;
-import com.pedropathing.control.FilteredPIDFCoefficients;
-import com.pedropathing.control.PIDFCoefficients;
+import com.pedropathing.algorithm.Algorithm;
+import com.pedropathing.algorithm.Foresight;
+import com.pedropathing.algorithm.ForesightConfig;
+import com.pedropathing.controllers.Controller;
 import com.pedropathing.follower.Follower;
-import com.pedropathing.follower.FollowerConstants;
-import com.pedropathing.ftc.FollowerBuilder;
-import com.pedropathing.ftc.drivetrains.MecanumConstants;
-import com.pedropathing.ftc.localization.constants.PinpointConstants;
-import com.pedropathing.geometry.PedroCoordinates;
-import com.pedropathing.geometry.Pose;
-import com.pedropathing.paths.PathConstraints;
+import com.pedropathing.localization.Localizer;
+import com.pedropathing.math.Matrix;
+import com.pedropathing.math.Pose;
+import com.pedropathing.math.Vector2D;
+import com.pedropathing.revhub.drivetrains.Mecanum;
+import com.pedropathing.revhub.drivetrains.MecanumConfig;
+import com.pedropathing.revhub.localizers.PinpointConfig;
+import com.pedropathing.revhub.localizers.PinpointLocalizer;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -18,12 +21,13 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 @Configurable
 public class Constants {
-    public static double AGGRESSIVE_PROPORTIONAL = 0.28;
-    public static double DEFAULT_PROPORTIONAL = 0.22;
-    public static double MEDIUM_PROPORTIONAL = 0.15;
-    public static double CONSERVATIVE_PROPORTIONAL = 0.1;
-    public static double K_LINEAR_BRAKE = 0.0633;
-    public static double K_QUADRATIC_BRAKE = 0.00146;
+    public static double ROBOT_WIDTH_CM = 36.0;   // Se colocar chapa externa lateral, adicionar a espessura aqui
+    public static double ROBOT_LENGTH_CM = 37.2;  // Se colocar chapa externa frontal/traseira, adicionar a espessura aqui
+    public static double ROBOT_WIDTH_INCHES = ROBOT_WIDTH_CM / 2.54;   // ~14.173 in
+    public static double ROBOT_LENGTH_INCHES = ROBOT_LENGTH_CM / 2.54; // ~14.646 in
+    public static double HALF_WIDTH_INCHES = ROBOT_WIDTH_INCHES / 2.0;   // ~7.087 in (Offset X do centro)
+    public static double HALF_LENGTH_INCHES = ROBOT_LENGTH_INCHES / 2.0; // ~7.323 in (Offset Y do centro)
+    public static Pose CORNER_RESET_POSE = new Pose(HALF_WIDTH_INCHES, HALF_LENGTH_INCHES, Math.toRadians(90.0));
 
     public static class Drivetrain {
         public static String LEFT_FRONT_MOTOR = "leftFront";
@@ -33,100 +37,102 @@ public class Constants {
         public static String PINPOINT_LOCALIZER = "pinpoint";
     }
 
-    public static FollowerConstants followerConstants = new FollowerConstants()
-        .mass(6)
-        .predictiveBrakingCoefficients(
-                new com.pedropathing.control.PredictiveBrakingCoefficients(
-                        DEFAULT_PROPORTIONAL,
-                        K_LINEAR_BRAKE,
-                        K_QUADRATIC_BRAKE
-                )
-        )
-            .forwardZeroPowerAcceleration(-73.315092662612045)
-            .lateralZeroPowerAcceleration(-97.42340280933647)
-            .useSecondaryTranslationalPIDF(true)
-            .useSecondaryHeadingPIDF(false)
-            .useSecondaryDrivePIDF(false)
-            .centripetalScaling(0.0000)
-            .translationalPIDFCoefficients(
-                    new PIDFCoefficients(5, 0.01, 0.3, 0.3)
-            )
-            .headingPIDFCoefficients(
-                    new PIDFCoefficients(1.4, 0.0, 0.3, 0.02)
-            )
-            .drivePIDFCoefficients(
-                    new FilteredPIDFCoefficients(0.65, 0.001, 0.09, 0.5, 0.02)
-            );
+    public static MecanumConfig drivetrainConfig = new MecanumConfig(c -> {
+        c.frontLeftName.set(Drivetrain.LEFT_FRONT_MOTOR);
+        c.frontRightName.set(Drivetrain.RIGHT_FRONT_MOTOR);
+        c.backLeftName.set(Drivetrain.LEFT_REAR_MOTOR);
+        c.backRightName.set(Drivetrain.RIGHT_REAR_MOTOR);
+        c.frontLeftDirection.set(DcMotorSimple.Direction.FORWARD);
+        c.frontRightDirection.set(DcMotorSimple.Direction.REVERSE);
+        c.backLeftDirection.set(DcMotorSimple.Direction.FORWARD);
+        c.backRightDirection.set(DcMotorSimple.Direction.REVERSE);
+    });
 
-    public static MecanumConstants driveConstants = new MecanumConstants()
-            .maxPower(1)
-            .leftFrontMotorName(Drivetrain.LEFT_FRONT_MOTOR)
-            .leftRearMotorName(Drivetrain.LEFT_REAR_MOTOR)
-            .rightFrontMotorName(Drivetrain.RIGHT_FRONT_MOTOR)
-            .rightRearMotorName(Drivetrain.RIGHT_REAR_MOTOR)
-            .leftFrontMotorDirection(DcMotorSimple.Direction.REVERSE)
-            .leftRearMotorDirection(DcMotorSimple.Direction.REVERSE)
-            .rightFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
-            .rightRearMotorDirection(DcMotorSimple.Direction.FORWARD)
-            .xVelocity(77.11611423342248)
-            .yVelocity(70.88718660609929)
-            .useBrakeModeInTeleOp(true);
+    public static PinpointConfig localizerConfig = new PinpointConfig(c -> {
+        c.name.set(Drivetrain.PINPOINT_LOCALIZER);
+        c.podType.set(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
+        c.xPodOffset.set(-5.70);
+        c.yPodOffset.set(0.73);
+        c.xPodDirection.set(GoBildaPinpointDriver.EncoderDirection.REVERSED);
+        c.yPodDirection.set(GoBildaPinpointDriver.EncoderDirection.FORWARD);
+        c.globalDistanceUnit.set(DistanceUnit.INCH);
+        c.offsetUnits.set(DistanceUnit.INCH);
+    });
 
-    public static PinpointConstants localizerConstants = new PinpointConstants()
-            .forwardPodY(5.5)
-            .strafePodX(1.5)
-            .distanceUnit(DistanceUnit.INCH)
-            .hardwareMapName(Drivetrain.PINPOINT_LOCALIZER)
-            .yawScalar(1.00474)
-            .encoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD)
-            .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED)
-            .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD);
+    public static class DriveConstantsCompat {
+        public String leftFrontMotorName = Drivetrain.LEFT_FRONT_MOTOR;
+        public String rightFrontMotorName = Drivetrain.RIGHT_FRONT_MOTOR;
+        public String leftRearMotorName = Drivetrain.LEFT_REAR_MOTOR;
+        public String rightRearMotorName = Drivetrain.RIGHT_REAR_MOTOR;
+    }
+    public static final DriveConstantsCompat driveConstants = new DriveConstantsCompat();
 
-    // Constraints padrão — usados no TeleOp e como base
-    public static PathConstraints pathConstraints = new PathConstraints(
-            0.99,  // tValue
-            2.0,   // velocity (in/s)
-            1.5,   // translational (inches)
-            0.04,  // heading (rad)
-            250,   // timeout (ms)
-            1.5,   // brakingStrength
-            10,    // bezier limit
-            0.4    // brakingStart
-    );
+    // Autonomous max-path-speed presets (fração 0.0-1.0, aplicados de verdade por
+    // GoToPoseCommand.setConstraints via ForesightConfig.maxPathSpeed).
+//    public static final double pathConstraints = 1.0;
+//    public static final double autoShootConstraints = 0.6;   // mais devagar/preciso pra aproximar do HIVE
+//    public static final double autoTransitConstraints = 1.0; // rápido, pros ciclos de intake
 
-    // Constraints para movimentos de TRAVESSIA no autônomo.
-    // O robô não precisa parar com precisão — só precisa chegar perto
-    // e continuar. Muito mais rápido pois não espera desacelerar.
-    public static PathConstraints autoTransitConstraints = new PathConstraints(
-            0.95,  // tValue — termina aos 95% do caminho, não espera o fim
-            10.0,   // velocity — pode ainda estar rápido ao "terminar"
-            6.0,   // translational — aceita até 3 inches de erro
-            0.1,   // heading — aceita até ~5.7° de erro
-            100,   // timeout — só 100ms de correção, não 250
-            2.0,
-            5,
-            0.1
-    );
+    public static ForesightConfig foresightConfig = new ForesightConfig(c -> {
+        // Measured (calibrate_translational_feedback / calibrate_heading_feedback)
+        c.forwardTranslational.set(Controller.piecewise(Controller.proportional(0.223475)).put(2.5, Controller.proportional(0.604847)));
+        c.strafeTranslational.set(Controller.piecewise(Controller.proportional(0.095045)).put(2.5, Controller.proportional(0.257245)));
+        c.headingFeedback.set(Controller.proportional(2.65204));
+        c.headingStaticFF.set(Controller.zero);
+        c.coast.set(Controller.proportionalFeedforward(0.0122618));
+        c.brake.set(Controller.proportionalFeedforward(0.0104226));
+        c.holdPointTranslationalScaling.set(1.0);
+        c.holdPointHeadingScaling.set(1.0);
+        c.maxBrakingPower.set(1.0);
+        c.maxAccelerationConstraint.set(1000.0);
+        c.maxVelocityConstraint.set(1000.0);
+        c.maxDecelerationConstraint.set(ForesightConfig.Constraint.NONE);
+        c.maxPathSpeed.set(1.0);
+        c.maxDecelerationScale.set(1.0);
+        c.brakeAggression.set(1.0);
+        c.coastDownToVelocity.set(5.0);
+        c.headingDeviationTolerance.set(0.05);
+        c.translationalDeviationTolerance.set(0.5);
+        c.brakeAtEnd.set(true);
+        c.pathSkip.set(false);
+        c.headingDriveRatio.set(1.0);
 
-    // Constraints para poses de TIRO — precisa parar com precisão
-    public static PathConstraints autoShootConstraints = new PathConstraints(
-            0.97,  // tValue — percorre quase tudo
-            8.0,   // velocity — pode estar um pouco mais rápido que antes
-            2.0,   // translational — 1.5 inches de tolerância
-            0.05,  // heading — ~2.9°
-            300,   // timeout — 150ms é suficiente
-            2.5,
-            10,
-            0.4
-    );
+        // Measured (calibrate_foresight_braking)
+        c.linearBrakeCoefficients.set(Matrix.diag(0.117823, 0.0547195));
+        c.quadraticBrakeCoefficients.set(Matrix.diag(0.00125541, 0.00222427));
+        c.headingBrakeCoefficients.set(Vector2D.cartesian(0.0627234, 0.006954));
+        c.cosineScale.set(true);
 
-    public static Follower createFollower(HardwareMap hardwareMap) {
-        return new FollowerBuilder(followerConstants, hardwareMap)
-                .setDrivetrain(new LucasMecanumDrive(hardwareMap, driveConstants))
-                .pinpointLocalizer(localizerConstants)
-                .pathConstraints(pathConstraints)
-                .build();
+        // Measured (calibrate_velocity / calibrate_zero_power)
+        c.maxAchievableForwardVelocity.set(83.1065);
+        c.maxAchievableStrafeVelocity.set(67.0362);
+        c.naturalForwardDeceleration.set(25.3979);
+        c.naturalStrafeDeceleration.set(47.3951);
+        c.minCorrectionDistance.set(0.1);
+        c.parametricTConstraint.set(0.995);
+        c.headingConstraint.set(0.01);
+        c.translationalConstraint.set(0.1);
+        c.velocityConstraint.set(0.1);
+        c.timeoutConstraint.set(0.1);
+    });
+
+    public static com.pedropathing.drivetrain.Drivetrain drivetrain(HardwareMap hardwareMap) {
+        return new Mecanum(hardwareMap, drivetrainConfig);
     }
 
-    public static double TIME_BETWEEN_LINES = 2000;
+    public static Localizer localizer(HardwareMap hardwareMap) {
+        return new PinpointLocalizer(hardwareMap, localizerConfig);
+    }
+
+    public static Algorithm foresight() {
+        return new Foresight(foresightConfig);
+    }
+
+    public static Follower create(HardwareMap hardwareMap) {
+        return new Follower(localizer(hardwareMap), drivetrain(hardwareMap), foresight());
+    }
+
+    public static Follower createFollower(HardwareMap hardwareMap) {
+        return create(hardwareMap);
+    }
 }

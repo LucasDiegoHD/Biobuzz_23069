@@ -1,24 +1,20 @@
 package org.firstinspires.ftc.teamcode.pedroPathing;
 
-import com.pedropathing.geometry.BezierCurve;
-import com.pedropathing.geometry.BezierLine;
-import com.pedropathing.geometry.BezierPoint;
-import com.pedropathing.geometry.FuturePose;
-import com.pedropathing.geometry.Pose;
-import com.pedropathing.math.MathFunctions;
-import com.pedropathing.paths.HeadingInterpolator;
+import com.pedropathing.api.Paths;
+import com.pedropathing.math.Pose;
+import com.pedropathing.paths.Path;
+import com.pedropathing.utils.Angle;
 
 import org.firstinspires.ftc.teamcode.utils.AllianceEnum;
 import org.firstinspires.ftc.teamcode.utils.DataStorage;
 
-import java.util.Arrays;
-
 /**
  * Alliance-aware pose abstraction supporting lazy mirroring and relative offsets.
+ * Upgraded for Pedro Pathing 3.
  *
  * @author LucasDiegoHD - Team #23069
  */
-public class ColoredBiobuzzPose implements FuturePose {
+public class ColoredBiobuzzPose {
 
     private final Pose pose;
     private final AllianceEnum color;
@@ -54,74 +50,60 @@ public class ColoredBiobuzzPose implements FuturePose {
     }
 
     public ColoredBiobuzzPose(double x, double y) {
-        this(new Pose(x, y), AllianceEnum.Blue);
+        this(new Pose(x, y, 0), AllianceEnum.Blue);
     }
 
     public ColoredBiobuzzPose() {
         this(0, 0);
     }
 
+    private static Pose mirrorPose(Pose p) {
+        return new Pose(144.0 - p.x(), p.y(), Angle.normalizeSigned(Math.PI - p.heading()));
+    }
+
     public Pose getPose(AllianceEnum desiredColor) {
         if (desiredColor == AllianceEnum.Red) {
             if (red == null) {
-                red = pose.mirror();
+                red = mirrorPose(pose);
             }
             return red;
         }
 
         if (blue == null) {
-            blue = pose.mirror();
+            blue = mirrorPose(pose);
         }
         return blue;
     }
 
-    @Override
     public Pose getPose() {
         return getPose(DataStorage.alliance);
     }
 
     public ColoredBiobuzzPose down(double inches) {
-        return new ColoredBiobuzzPose(this.pose.plus(new Pose(0, -inches)), color);
+        return new ColoredBiobuzzPose(this.pose.plus(new Pose(0, -inches, 0)), color);
     }
 
     public ColoredBiobuzzPose up(double inches) {
-        return new ColoredBiobuzzPose(this.pose.plus(new Pose(0, inches)), color);
+        return new ColoredBiobuzzPose(this.pose.plus(new Pose(0, inches, 0)), color);
     }
 
     public ColoredBiobuzzPose towardsRedWall(double inches) {
-        return new ColoredBiobuzzPose(this.pose.plus(new Pose(color == AllianceEnum.Blue ? inches : -inches, 0)), color);
+        return new ColoredBiobuzzPose(this.pose.plus(new Pose(color == AllianceEnum.Blue ? inches : -inches, 0, 0)), color);
     }
 
     public ColoredBiobuzzPose towardsBlueWall(double inches) {
-        return new ColoredBiobuzzPose(this.pose.plus(new Pose(color == AllianceEnum.Red ? inches : -inches, 0)), color);
+        return new ColoredBiobuzzPose(this.pose.plus(new Pose(color == AllianceEnum.Red ? inches : -inches, 0, 0)), color);
     }
 
-    public static BezierCurve makeBezier(ColoredBiobuzzPose... poses) {
+    public static Path makePath(ColoredBiobuzzPose... poses) {
         Pose[] resolvedPoses = new Pose[poses.length];
         for (int i = 0; i < poses.length; i++) {
             resolvedPoses[i] = poses[i].getPose();
         }
-        return new BezierCurve(resolvedPoses);
-    }
-
-    public static BezierCurve through(ColoredBiobuzzPose... poses) {
-        Pose[] resolvedPoses = new Pose[poses.length];
-        for (int i = 0; i < poses.length; i++) {
-            resolvedPoses[i] = poses[i].getPose();
+        if (resolvedPoses.length == 2) {
+            return Paths.line(resolvedPoses[0], resolvedPoses[1]);
         }
-        return BezierCurve.through(resolvedPoses);
-    }
-
-    public static BezierLine makeBezier(ColoredBiobuzzPose pose1, ColoredBiobuzzPose pose2) {
-        return new BezierLine(pose1.getPose(), pose2.getPose());
-    }
-
-    public static BezierPoint makeBezier(ColoredBiobuzzPose pose) {
-        return new BezierPoint(pose.getPose());
-    }
-
-    public static HeadingInterpolator mirror(HeadingInterpolator interpolation) {
-        return t -> MathFunctions.normalizeAngle(Math.PI - interpolation.interpolate(t));
+        return Paths.curve(resolvedPoses);
     }
 
     public AllianceEnum getColor() {
@@ -133,7 +115,7 @@ public class ColoredBiobuzzPose implements FuturePose {
     }
 
     public double getHeading() {
-        return getPose().getHeading();
+        return getPose().heading();
     }
 
     public ColoredBiobuzzPose offsetOppositeColor(Pose offset) {
@@ -151,19 +133,19 @@ public class ColoredBiobuzzPose implements FuturePose {
     }
 
     public static double getTangentHeading(ColoredBiobuzzPose pose1, ColoredBiobuzzPose pose2) {
-        return Math.atan2(pose2.getPose().getY() - pose1.getPose().getY(),
-                pose2.getPose().getX() - pose1.getPose().getX());
+        return Math.atan2(pose2.getPose().y() - pose1.getPose().y(),
+                pose2.getPose().x() - pose1.getPose().x());
     }
 
     public static double getHeading(double heading) {
         if (DataStorage.alliance == AllianceEnum.Red) {
-            return MathFunctions.normalizeAngle(Math.PI - heading);
+            return Angle.normalizeSigned(Math.PI - heading);
         }
         return heading;
     }
 
-    @Override
     public boolean initialized() {
         return true;
     }
 }
+

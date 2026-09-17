@@ -1,7 +1,7 @@
-package org.firstinspires.ftc.teamcode.subsystems.templates;
+package org.firstinspires.ftc.teamcode.subsystems;
 
-import com.pedropathing.control.PIDFCoefficients;
-import com.pedropathing.control.PIDFController;
+import org.firstinspires.ftc.teamcode.utils.control.PIDFCoefficients;
+import org.firstinspires.ftc.teamcode.utils.control.PIDFController;
 import com.bylazar.telemetry.TelemetryManager;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;

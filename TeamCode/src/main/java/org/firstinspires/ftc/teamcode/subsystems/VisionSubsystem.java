@@ -1,8 +1,7 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.bylazar.telemetry.TelemetryManager;
-import com.pedropathing.ftc.FTCCoordinates;
-import com.pedropathing.geometry.Pose;
+import com.pedropathing.math.Pose;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -77,11 +76,9 @@ public class VisionSubsystem {
     }
 
     private Pose convertToPedro(Pose3D pose3d) {
-        Pose rawPose = new Pose(
-                pose3d.getPosition().x * INCHES_IN_METER,
-                pose3d.getPosition().y * INCHES_IN_METER,
-                Math.toRadians(pose3d.getOrientation().getYaw())
-        );
-        return FTCCoordinates.INSTANCE.convertToPedro(rawPose);
+        double pedroX = (pose3d.getPosition().x * INCHES_IN_METER) + 72.0;
+        double pedroY = (pose3d.getPosition().y * INCHES_IN_METER) + 72.0;
+        double heading = Math.toRadians(pose3d.getOrientation().getYaw());
+        return new Pose(pedroX, pedroY, heading);
     }
 }

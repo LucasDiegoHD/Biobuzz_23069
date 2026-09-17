@@ -14,9 +14,8 @@ import com.qualcomm.robotcore.hardware.configuration.typecontainers.MotorConfigu
 import java.util.Arrays;
 import java.util.List;
 
-
-@TeleOp(name = "Motor Directions", group = "Teleop Test")
 @Disabled
+@TeleOp(name = "Motor Directions", group = "Teleop Test")
 public class MotorDirections extends OpMode {
     @IgnoreConfigurable
     static TelemetryManager telemetryM;
@@ -28,12 +27,16 @@ public class MotorDirections extends OpMode {
 
     @Override
     public void init() {
-        telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
+        try {
+            telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
+        } catch (Exception ignored) {
+            telemetryM = null;
+        }
 
-        leftFront = hardwareMap.get(DcMotorEx.class, Constants.driveConstants.leftFrontMotorName );
-        leftRear = hardwareMap.get(DcMotorEx.class, Constants.driveConstants.leftRearMotorName);
-        rightRear = hardwareMap.get(DcMotorEx.class, Constants.driveConstants.rightRearMotorName);
-        rightFront = hardwareMap.get(DcMotorEx.class, Constants.driveConstants.rightFrontMotorName);
+        leftFront = hardwareMap.get(DcMotorEx.class, Constants.Drivetrain.LEFT_FRONT_MOTOR);
+        leftRear = hardwareMap.get(DcMotorEx.class, Constants.Drivetrain.LEFT_REAR_MOTOR);
+        rightRear = hardwareMap.get(DcMotorEx.class, Constants.Drivetrain.RIGHT_REAR_MOTOR);
+        rightFront = hardwareMap.get(DcMotorEx.class, Constants.Drivetrain.RIGHT_FRONT_MOTOR);
         leftFront.setDirection(DcMotorSimple.Direction.FORWARD);
         leftRear.setDirection(DcMotorSimple.Direction.FORWARD);
         rightFront.setDirection(DcMotorSimple.Direction.FORWARD);
@@ -79,12 +82,19 @@ public class MotorDirections extends OpMode {
             rightRear.setPower(0);
 
 
-        telemetryM.addLine("Press A to spin the left front motor at 100% power");
-        telemetryM.addLine("Press Y to spin the left rear motor at 100% power");
-        telemetryM.addLine("Press B to spin the right front motor at 100% power");
-        telemetryM.addLine("Press X to spin the right rear motor at 100% power");
+        telemetry.addLine("Press A to spin the left front motor at 100% power");
+        telemetry.addLine("Press Y to spin the left rear motor at 100% power");
+        telemetry.addLine("Press B to spin the right front motor at 100% power");
+        telemetry.addLine("Press X to spin the right rear motor at 100% power");
+        telemetry.update();
 
-        telemetryM.update();
+        if (telemetryM != null) {
+            telemetryM.addLine("Press A to spin the left front motor at 100% power");
+            telemetryM.addLine("Press Y to spin the left rear motor at 100% power");
+            telemetryM.addLine("Press B to spin the right front motor at 100% power");
+            telemetryM.addLine("Press X to spin the right rear motor at 100% power");
+            telemetryM.update();
+        }
     }
 }
 
