@@ -31,6 +31,7 @@ Esta regra documenta a arquitetura de tração Mecanum e o sistema de pilotagem 
   $$y = -0.5 \cdot \tan(\text{stickY} \cdot 1.12), \quad x = 0.5 \cdot \tan(\text{stickX} \cdot 1.12), \quad rx = 0.5 \cdot \tan(\text{stickRX} \cdot 1.12)$$
   Garante resolução milimétrica no centro e potência máxima nas bordas.
 - **Filtro de Desvio do Dedão (Snap 15°)**:
+  `smoothGamepadAngle(x, y, angleZero)` trava eixos retos quando o desvio for menor que $\tan(15^\circ)$.
 - **Normalização por Denominador (Giro e Translação Simultâneos)**:
   ```java
   double denominator = Math.max(Math.abs(y) + Math.abs(x) + Math.abs(rx), 1.0);
