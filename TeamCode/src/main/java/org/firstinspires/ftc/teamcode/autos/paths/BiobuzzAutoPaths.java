@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.autos.paths;
 
 import com.pedropathing.math.Pose;
+import com.pedropathing.utils.Angle;
 import org.firstinspires.ftc.teamcode.pedroPathing.ColoredBiobuzzPose;
 import org.firstinspires.ftc.teamcode.utils.AllianceEnum;
 import org.firstinspires.ftc.teamcode.utils.DataStorage;
@@ -61,10 +62,11 @@ public final class BiobuzzAutoPaths {
     }
 
     public static Pose getParkPose(AllianceEnum alliance) {
+
         if (alliance == AllianceEnum.Red) {
-            return new Pose(10.0, 104.0, Math.toRadians(90.0));
+            return new Pose(RED_PARK_X, RED_PARK_Y, Math.toRadians(90.0));
         } else {
-            return new Pose(134.0, 104.0, Math.toRadians(270.0));
+            return new Pose(BLUE_PARK_X, BLUE_PARK_Y, Math.toRadians(270.0));
         }
     }
 

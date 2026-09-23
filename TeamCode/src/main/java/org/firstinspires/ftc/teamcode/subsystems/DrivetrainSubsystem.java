@@ -70,7 +70,7 @@ public class DrivetrainSubsystem {
     private boolean holdingPose = false;
 
     // Heading Lock (Closed-Loop PIDF)
-    public static PIDFCoefficients HEADING_LOCK_PIDF = new PIDFCoefficients(1.3, 0.0, 0.05, 0.0);
+    public static PIDFCoefficients HEADING_LOCK_PIDF = new PIDFCoefficients(1.1, 0.0, 0.07, 0.0);
     private final PIDFController headingPIDFController = new PIDFController(HEADING_LOCK_PIDF);
     private boolean headingLockEnabled = false;
     private double targetHeading = 0.0;

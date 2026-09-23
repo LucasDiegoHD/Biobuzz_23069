@@ -66,11 +66,16 @@ public final class AutoRoutines {
      * Rotina mínima: sai da parede (LEAVE) e vai direto pra LOADING ZONE (PARK).
      * Sem disparo nenhum — baseline de segurança pra garantir LEAVE (3) + PARK (5) = 8 pts
      * mesmo se o resto do robô ainda não estiver pronto.
+     *
+     * <p><b>Biobuzz — heading constante:</b> {@code .withConstantHeading()} trava o heading no
+     * valor da própria pose de destino (90° RED / 270° BLUE) DESDE O INÍCIO do path, em vez de
+     * interpolar do heading atual até o heading final. Isso evita o robô girar no meio do
+     * trajeto — não deveria ter nenhuma rotação nessa rotina, já que START e PARK já nascem com
+     * o mesmo heading por aliança.
      */
     public static Command biobuzzStartToPark(Robot robot) {
         return Groups.sequential(
                 new GoToPoseCommand(robot.drivetrain, BiobuzzAutoPaths.getParkPose())
-                        .withConstantHeading(BiobuzzAutoPaths.getParkPose().heading())
                         .toCommand()
         );
     }

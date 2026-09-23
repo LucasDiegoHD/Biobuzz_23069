@@ -2,10 +2,11 @@ package org.firstinspires.ftc.teamcode.pedroPathing;
 
 import com.pedropathing.tuning.autotune.Procedure;
 import com.pedropathing.tuning.autotune.Tuner;
-import org.firstinspires.ftc.teamcode.pedroPathing.procedures.ForesightTuner;
-import org.firstinspires.ftc.teamcode.pedroPathing.procedures.MecanumTuner;
+
 import org.firstinspires.ftc.teamcode.pedroPathing.procedures.PinpointTuner;
 import org.firstinspires.ftc.teamcode.pedroPathing.procedures.Tests;
+import org.firstinspires.ftc.teamcode.pedroPathing.procedures.ForesightTuner;
+import org.firstinspires.ftc.teamcode.pedroPathing.procedures.MecanumTuner;
 
 /**
  * AutoTune configuration and procedures entry point for Pedro Pathing 3.

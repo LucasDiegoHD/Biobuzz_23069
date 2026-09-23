@@ -1,51 +1,33 @@
 //
 // build.gradle in TeamCode
 //
-// Most of the definitions for building your module reside in a common, shared
-// file 'build.common.gradle'. Being factored in this way makes it easier to
-// integrate updates to the FTC into your code. If you really need to customize
-// the build definitions, you can place those customizations in this file, but
-// please think carefully as to whether such customizations are really necessary
-// before doing so.
-//
 
-// ============================================================================
-// ✅ Custom FTC TeamCode Build Configuration
-// ============================================================================
-
-// Inclui definições padrão do SDK FTC
 apply from: '../build.common.gradle'
 apply from: '../build.dependencies.gradle'
 
-// ----------------------------------------------------------------------------
-// Configurações específicas do módulo TeamCode
-// ----------------------------------------------------------------------------
 android {
     namespace = 'org.firstinspires.ftc.teamcode'
 
-    // Corrige empacotamento de bibliotecas JNI (necessário para Dashboard e KoalaLog)
+    // Força a compatibilidade do Java 8 para casar com o build.common.gradle da SDK
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
     packagingOptions {
         jniLibs.useLegacyPackaging true
     }
 }
 
-// ----------------------------------------------------------------------------
-// Dependências adicionais para o módulo TeamCode
-// ----------------------------------------------------------------------------
 repositories {
     mavenCentral()
     google()
-    maven { url 'https://jitpack.io' }          // Necessário para KoalaLog
-    maven { url = 'https://maven.brott.dev/' }  // Necessário para RoadRunner / PedroPathing
+    maven { url 'https://jitpack.io' }
+    maven { url = 'https://maven.brott.dev/' }
 }
 
 dependencies {
-    // Dependência base do SDK FTC
     implementation project(':FtcRobotController')
-
-
-    // KoalaLog (para logs compatíveis com AdvantageScope)
-    // ⚠️ Substitua <version> pela versão atual listada no GitHub (ex: 1.0.1)
 }
 
 // ----------------------------------------------------------------------------

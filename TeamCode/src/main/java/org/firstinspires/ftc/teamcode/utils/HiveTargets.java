@@ -72,13 +72,13 @@ public final class HiveTargets {
 
         if (alliance == AllianceEnum.Red) {
             return audienceSideUp
-                    ? new Pose(RED_AUDIENCE_CELL_X, RED_AUDIENCE_CELL_Y, 0)
-                    : new Pose(RED_FAR_CELL_X, RED_FAR_CELL_Y, 0);
+                    ? new Pose(RED_AUDIENCE_CELL_X, RED_AUDIENCE_CELL_Y, Math.toRadians(90))
+                    : new Pose(RED_FAR_CELL_X, RED_FAR_CELL_Y, Math.toRadians(270));
         }
 
         return audienceSideUp
-                ? new Pose(BLUE_AUDIENCE_CELL_X, BLUE_AUDIENCE_CELL_Y, 0)
-                : new Pose(BLUE_FAR_CELL_X, BLUE_FAR_CELL_Y, 0);
+                ? new Pose(BLUE_AUDIENCE_CELL_X, BLUE_AUDIENCE_CELL_Y, Math.toRadians(270))
+                : new Pose(BLUE_FAR_CELL_X, BLUE_FAR_CELL_Y, Math.toRadians(90));
     }
 
     /** Overload usando a aliança ativa em {@link DataStorage#alliance}. */
@@ -96,8 +96,8 @@ public final class HiveTargets {
      */
     public static Pose getInitialCellPose(AllianceEnum alliance) {
         return (alliance == AllianceEnum.Red)
-                ? new Pose(RED_AUDIENCE_CELL_X, RED_AUDIENCE_CELL_Y, 0)
-                : new Pose(BLUE_FAR_CELL_X, BLUE_FAR_CELL_Y, 0);
+                ? new Pose(RED_AUDIENCE_CELL_X, RED_AUDIENCE_CELL_Y, 90)
+                : new Pose(BLUE_FAR_CELL_X, BLUE_FAR_CELL_Y, 270);
     }
 
     /**

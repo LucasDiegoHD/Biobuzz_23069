@@ -35,12 +35,14 @@ public class Autos extends RobotOpMode {
     @Override
     public void init() {
         super.init();
-        robot.setAutoStartPose(BiobuzzAutoPaths.getStartPose());
+        DataStorage.alliance = selectedAlliance;
+        HiveTargets.resetForMatchStart(selectedAlliance);
     }
 
     @Override
     public void init_loop() {
         super.init_loop();
+        robot.drivetrain.getFollower().update();
 
         if (!isConfigured) {
             readConfiguration();
@@ -121,7 +123,6 @@ public class Autos extends RobotOpMode {
         robot.drivetrain.getFollower().setPose(startPose);
 
         switch (selectedStrategy) {
-
             case BIOBUZZ_PRELOAD_PARK:
                 autonomousCommand = AutoRoutines.biobuzzPreloadAndPark(robot);
                 break;
@@ -135,9 +136,6 @@ public class Autos extends RobotOpMode {
     public void start() {
         super.start();
 
-        // Biobuzz fix: sem isso, DrivetrainSubsystem.update() nunca roda o follower.update()
-        // completo durante o autônomo (só atualiza a pose) — o path nunca recebe correção/
-        // frenagem e o robô passa direto pelo alvo. isTeleOp precisa ser false aqui.
         robot.drivetrain.setTeleOp(false);
 
         if (autonomousCommand != null) {
@@ -153,6 +151,7 @@ public class Autos extends RobotOpMode {
         telemetry.addData("Pose Atual X", robot.drivetrain.getFollower().pose().x());
         telemetry.addData("Pose Atual Y", robot.drivetrain.getFollower().pose().y());
         telemetry.addData("Heading", Math.toDegrees(robot.drivetrain.getFollower().pose().heading()));
+        telemetry.addData("Distancia", robot.drivetrain.getFollower().distanceToEndpoint());
         telemetry.update();
     }
 }
