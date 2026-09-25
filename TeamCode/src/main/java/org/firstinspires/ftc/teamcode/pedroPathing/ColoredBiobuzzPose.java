@@ -58,7 +58,7 @@ public class ColoredBiobuzzPose {
     }
 
     private static Pose mirrorPose(Pose p) {
-        return new Pose(144.0 - p.x(), p.y(), Angle.normalizeSigned(Math.PI - p.heading()));
+        return new Pose(144.0 - p.x(), p.y(), p.heading());
     }
 
     public Pose getPose(AllianceEnum desiredColor) {

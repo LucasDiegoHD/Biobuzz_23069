@@ -119,10 +119,10 @@ public class DrivetrainSubsystem {
 
         motors = Arrays.asList(leftFront, leftRear, rightFront, rightRear);
 
-        leftFront.setDirection(DcMotorSimple.Direction.FORWARD);
-        leftRear.setDirection(DcMotorSimple.Direction.FORWARD);
-        rightFront.setDirection(DcMotorSimple.Direction.REVERSE);
-        rightRear.setDirection(DcMotorSimple.Direction.REVERSE);
+        leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
+        leftRear.setDirection(DcMotorSimple.Direction.REVERSE);
+        rightFront.setDirection(DcMotorSimple.Direction.FORWARD);
+        rightRear.setDirection(DcMotorSimple.Direction.FORWARD);
 
         for (DcMotorEx motor : motors) {
             motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -294,7 +294,7 @@ public class DrivetrainSubsystem {
     }
 
     public void arcadeDrive(Gamepad gamepad, double headingOffset) {
-        arcadeDrive(gamepad.left_stick_x, -gamepad.left_stick_y, -gamepad.right_stick_x,
+        arcadeDrive(gamepad.left_stick_x, -gamepad.left_stick_y, gamepad.right_stick_x,
                 MAGNITUDE_ZERO, ANGLE_ZERO, MAX_POWER, headingOffset);
     }
 

@@ -24,10 +24,10 @@ public final class BiobuzzAutoPaths {
     public static double BLUE_START_X = 84.0;
     public static double BLUE_START_Y = 129.35;
 
-    public static double RED_PARK_X = 10.0;
+    public static double RED_PARK_X = 16.0;
     public static double RED_PARK_Y = 104.0;
 
-    public static double BLUE_PARK_X = 134.0;
+    public static double BLUE_PARK_X = 128.0;
     public static double BLUE_PARK_Y = 40.0;
 
     // --- Ponto de disparo/entrega usado no preload e nos ciclos 1 e 2 ---
@@ -51,10 +51,11 @@ public final class BiobuzzAutoPaths {
     }
 
     public static Pose getStartPose(AllianceEnum alliance) {
-        double startX = (alliance == AllianceEnum.Red) ? RED_START_X : BLUE_START_X;
-        double startY = (alliance == AllianceEnum.Red) ? RED_START_Y : BLUE_START_Y;
-        double heading = HiveTargets.headingTowardsInitialCell(startX, startY, alliance);
-        return new Pose(startX, startY, heading);
+        if (alliance == AllianceEnum.Red) {
+            return new Pose(RED_START_X, RED_START_Y, Math.toRadians(90.0));
+        } else {
+            return new Pose(BLUE_START_X, BLUE_START_Y, Math.toRadians(-90.0));
+        }
     }
 
     public static Pose getParkPose() {
@@ -62,11 +63,10 @@ public final class BiobuzzAutoPaths {
     }
 
     public static Pose getParkPose(AllianceEnum alliance) {
-
         if (alliance == AllianceEnum.Red) {
             return new Pose(RED_PARK_X, RED_PARK_Y, Math.toRadians(90.0));
         } else {
-            return new Pose(BLUE_PARK_X, BLUE_PARK_Y, Math.toRadians(270.0));
+            return new Pose(BLUE_PARK_X, BLUE_PARK_Y, Math.toRadians(-90.0));
         }
     }
 
