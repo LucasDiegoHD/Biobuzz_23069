@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
+import com.bylazar.configurables.annotations.Configurable;
+import com.bylazar.configurables.annotations.IgnoreConfigurable;
 import com.bylazar.field.FieldManager;
 import com.bylazar.field.PanelsField;
 import com.bylazar.field.Style;
@@ -50,6 +52,7 @@ import java.util.List;
  *
  * @author LucasDiegoHD - TechMaker (#23069)
  */
+@Configurable
 public class DrivetrainSubsystem {
     private static final Logger log = LoggerFactory.getLogger(DrivetrainSubsystem.class);
     private final Follower follower;
@@ -69,14 +72,24 @@ public class DrivetrainSubsystem {
     private boolean isTeleOp = true;
     private boolean holdingPose = false;
 
-    // Heading Lock (Closed-Loop PIDF)
-    public static PIDFCoefficients HEADING_LOCK_PIDF = new PIDFCoefficients(1.1, 0.0, 0.07, 0.0);
+    // Heading Lock (Closed-Loop PIDF) - Sintonizável via Panels
+    public static double HEADING_LOCK_P = 0.9;
+    public static double HEADING_LOCK_I = 0.0;
+    public static double HEADING_LOCK_D = 0.07;
+    public static double HEADING_LOCK_F = 0.0;
+    @IgnoreConfigurable
+    public static PIDFCoefficients HEADING_LOCK_PIDF = new PIDFCoefficients(HEADING_LOCK_P, HEADING_LOCK_I, HEADING_LOCK_D, HEADING_LOCK_F);
     private final PIDFController headingPIDFController = new PIDFController(HEADING_LOCK_PIDF);
     private boolean headingLockEnabled = false;
     private double targetHeading = 0.0;
 
-    // Kick Function (Autonomous Scoring Zone Burst)
-    public static PIDFCoefficients KICK_TRANSLATIONAL_PIDF = new PIDFCoefficients(0.045, 0.0, 0.003, 0.0);
+    // Kick Function (Autonomous Scoring Zone Burst) - Sintonizável via Panels
+    public static double KICK_TRANSLATIONAL_P = 0.045;
+    public static double KICK_TRANSLATIONAL_I = 0.0;
+    public static double KICK_TRANSLATIONAL_D = 0.003;
+    public static double KICK_TRANSLATIONAL_F = 0.0;
+    @IgnoreConfigurable
+    public static PIDFCoefficients KICK_TRANSLATIONAL_PIDF = new PIDFCoefficients(KICK_TRANSLATIONAL_P, KICK_TRANSLATIONAL_I, KICK_TRANSLATIONAL_D, KICK_TRANSLATIONAL_F);
     private final PIDFController kickXController = new PIDFController(KICK_TRANSLATIONAL_PIDF);
     private final PIDFController kickYController = new PIDFController(KICK_TRANSLATIONAL_PIDF);
     private final ElapsedTime kickTimer = new ElapsedTime();
@@ -243,7 +256,7 @@ public class DrivetrainSubsystem {
                 rx = 0.5 * Math.tan(rx * 1.12);
             } else if (headingLockEnabled) {
                 double currentHeading = follower.pose().heading();
-                double headingError = Angle.error(currentHeading, targetHeading);
+                double headingError = Angle.error(targetHeading, currentHeading);
 
                 if (Math.abs(headingError) < Math.toRadians(1.0)) {
                     rx = 0.0;
@@ -573,6 +586,17 @@ public class DrivetrainSubsystem {
      * aqui. Ver {@code Autos.start()}, que agora chama {@code drivetrain.setTeleOp(false)}.
      */
     public void update() {
+        // Sincronização em tempo real das constantes de controle alteradas pelo painel do Panels
+        HEADING_LOCK_PIDF.p = HEADING_LOCK_P;
+        HEADING_LOCK_PIDF.i = HEADING_LOCK_I;
+        HEADING_LOCK_PIDF.d = HEADING_LOCK_D;
+        HEADING_LOCK_PIDF.f = HEADING_LOCK_F;
+
+        KICK_TRANSLATIONAL_PIDF.p = KICK_TRANSLATIONAL_P;
+        KICK_TRANSLATIONAL_PIDF.i = KICK_TRANSLATIONAL_I;
+        KICK_TRANSLATIONAL_PIDF.d = KICK_TRANSLATIONAL_D;
+        KICK_TRANSLATIONAL_PIDF.f = KICK_TRANSLATIONAL_F;
+
         if (holdingPose || !isTeleOp) {
             follower.update();
         } else {
